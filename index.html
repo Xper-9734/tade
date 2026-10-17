@@ -1311,6 +1311,49 @@
         #menuOverlay #mainMenuButtons .btn::before {
             border-color: var(--menu-heading);
         }
+        #accessCodeOverlay {
+            z-index: 200;
+            justify-content: center;
+            background: radial-gradient(circle, rgba(20,24,33,0.96) 0%, rgba(10,12,16,0.99) 100%);
+        }
+        #accessCodeOverlay h1 {
+            margin-bottom: 12px;
+            font-size: clamp(28px, 6vw, 44px);
+        }
+        #accessCodeForm {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+            width: min(360px, 92vw);
+            padding: 28px 24px;
+            border: 1px solid rgba(76, 209, 55, 0.4);
+            border-radius: 14px;
+            background: rgba(20, 26, 20, 0.9);
+            box-shadow: 0 0 32px rgba(76, 209, 55, 0.12);
+            box-sizing: border-box;
+        }
+        #accessCodeForm label {
+            color: #d2d9ae;
+            font-size: 16px;
+            font-weight: bold;
+            text-align: center;
+        }
+        #accessCodeInput {
+            width: 100%;
+            border-color: #4cd137;
+        }
+        #accessCodeError {
+            min-height: 20px;
+            margin: 0;
+            color: #ff6b6b;
+            font-size: 14px;
+            text-align: center;
+        }
+        #accessCodeForm .btn {
+            width: min(240px, 100%);
+            margin: 0;
+        }
         @media (max-width: 600px) {
             #settingsSection .theme-settings-row {
                 min-height: 42px;
@@ -1360,8 +1403,18 @@
 </head>
 <body>
 
+    <div id="accessCodeOverlay" class="modal-overlay">
+        <h1>TACTICAL DEPLOYMENT</h1>
+        <form id="accessCodeForm" onsubmit="return unlockMainMenu(event)">
+            <label for="accessCodeInput">Írd be a belépési kódot</label>
+            <input id="accessCodeInput" class="input-code" type="password" autocomplete="off" autofocus required>
+            <p id="accessCodeError" role="alert" aria-live="polite"></p>
+            <button class="btn" type="submit">Tovább a főmenüre</button>
+        </form>
+    </div>
+
     <!-- MAIN MENU -->
-    <div id="menuOverlay" class="modal-overlay">
+    <div id="menuOverlay" class="modal-overlay" style="display:none;">
         <h1 id="menuTitle" data-i18n="menuTitle">TACTICAL DEPLOYMENT</h1>
         
         <div id="mainMenuButtons">
@@ -2530,6 +2583,23 @@
             } else {
                 stopLobbyHeartbeat();
             }
+        }
+
+        const ACCESS_CODES = ['tisztajelszo', 'iskola' , 'kecskemet'];
+        function unlockMainMenu(event) {
+            event.preventDefault();
+            const codeInput = document.getElementById('accessCodeInput');
+            const errorMessage = document.getElementById('accessCodeError');
+            if (!ACCESS_CODES.includes(codeInput.value.trim())) {
+                errorMessage.textContent = 'Hibás kód. Próbáld újra!';
+                codeInput.focus();
+                codeInput.select();
+                return false;
+            }
+
+            document.getElementById('accessCodeOverlay').style.display = 'none';
+            document.getElementById('menuOverlay').style.display = 'flex';
+            return false;
         }
 
         function applyMenuTheme(theme) {
