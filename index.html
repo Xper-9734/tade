@@ -2586,6 +2586,19 @@
         }
 
         const ACCESS_CODES = ['tisztajelszo', 'iskola' , 'kecskemet'];
+        const ACCESS_GRANTED_STORAGE_KEY = 'tb_accessGranted';
+
+        function initAccessCode() {
+            try {
+                if (localStorage.getItem(ACCESS_GRANTED_STORAGE_KEY) === 'true') {
+                    document.getElementById('accessCodeOverlay').style.display = 'none';
+                    document.getElementById('menuOverlay').style.display = 'flex';
+                }
+            } catch (error) {
+                console.warn('Unable to load the saved access preference.', error);
+            }
+        }
+
         function unlockMainMenu(event) {
             event.preventDefault();
             const codeInput = document.getElementById('accessCodeInput');
@@ -2597,6 +2610,11 @@
                 return false;
             }
 
+            try {
+                localStorage.setItem(ACCESS_GRANTED_STORAGE_KEY, 'true');
+            } catch (error) {
+                console.warn('Unable to save the access preference.', error);
+            }
             document.getElementById('accessCodeOverlay').style.display = 'none';
             document.getElementById('menuOverlay').style.display = 'flex';
             return false;
@@ -5338,6 +5356,7 @@
         function initLanguage() {
             const sel = document.getElementById('languageSelect');
             if (sel) sel.value = currentLang;
+            initAccessCode();
             initMenuTheme();
             changeLanguage(currentLang);
         }
