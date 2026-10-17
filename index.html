@@ -1410,6 +1410,7 @@
             <input id="accessCodeInput" class="input-code" type="password" autocomplete="off" autofocus required>
             <p id="accessCodeError" role="alert" aria-live="polite"></p>
             <button class="btn" type="submit">Tovább a főmenüre</button>
+            <button id="cancelAccessCodeChange" class="btn btn-secondary" type="button" onclick="discardAccessCodeChange()" style="display:none;">Vissza a menübe</button>
         </form>
     </div>
 
@@ -1422,6 +1423,7 @@
             <button class="btn" style="width: 280px; display: block; margin: 10px auto; background-color: #00d2d3;" onclick="showMenuSection('online')" data-i18n="btnOnline">ONLINE - MULTIPLAYER</button>
             <button class="btn btn-secondary" style="width: 280px; display: block; margin: 10px auto;" onclick="showMenuSection('settings')" data-i18n="btnSettings">SETTINGS</button>
             <button class="btn btn-secondary" style="width: 280px; display: block; margin: 10px auto;" onclick="toggleFullscreen()" data-i18n="btnFullscreen">FULL SCREEN</button>
+            <button class="btn btn-secondary" style="width: 280px; display: block; margin: 10px auto;" onclick="beginAccessCodeChange()" data-i18n="btnChangeAccessCode">BELÉPÉSI KÓD VÁLTÁSA</button>
         </div>
 
         <!-- ONLINE MODE SECTION -->
@@ -1505,7 +1507,7 @@
 
                         <div>
                             <span style="display:block; font-size:11px; color:#aaa; margin-bottom:3px;" data-i18n="joinRoomLabel">CONNECT TO ANOTHER ROOM:</span>
-                            <input type="text" id="joinPeerId" class="input-code" data-i18n-placeholder="roomCodePlaceholder" placeholder="ENTER ROOM CODE" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase();">
+                            <input type="text" id="joinPeerId" class="input-code" data-i18n-placeholder="roomCodePlaceholder" placeholder="ENTER ROOM CODE" style="text-transform:uppercase;" oninput="normalizeRoomCodeInput(this)" onkeydown="connectOnEnter(event)">
                             <button class="btn" style="margin-top:5px; background-color: #00d2d3;" onclick="connectToPeer()" data-i18n="btnConnect">CONNECT</button>
                         </div>
                     </div>
@@ -2112,6 +2114,7 @@
                 btnOnline: "ONLINE 1v1 MULTIPLAYER",
                 btnSettings: "SETTINGS / BEÁLLÍTÁSOK",
                 btnFullscreen: "TELJES KÉPERNYŐ",
+                btnChangeAccessCode: "BELÉPÉSI KÓD VÁLTÁSA",
                 onlineTitle: "ONLINE JÁTÉKMÓD",
                 onlineModeTitle: "JÁTÉKMÓD",
                 onlineDuelMode: "1v1 PÁRBAJ",
@@ -2223,6 +2226,7 @@
                 btnOnline: "ONLINE - MULTIPLAYER",
                 btnSettings: "SETTINGS",
                 btnFullscreen: "FULL SCREEN",
+                btnChangeAccessCode: "CHANGE ACCESS CODE",
                 onlineTitle: "ONLINE GAME MODE",
                 onlineModeTitle: "GAME MODE",
                 onlineDuelMode: "1v1 DUEL",
@@ -2421,6 +2425,8 @@
             const activeTag = document.activeElement ? document.activeElement.tagName : '';
             if (activeTag === 'INPUT' || activeTag === 'TEXTAREA') return;
 
+            if (e.code === 'KeyM' && !e.repeat) eliminateAllEnemies();
+
             if (e.code === 'Escape') { quitGameToMenu(); return; }
             if (e.code === keyBindings.weapon1) { switchWeapon('1'); }
             else if (e.code === keyBindings.weapon2) { switchWeapon('2'); }
@@ -2585,18 +2591,58 @@
             }
         }
 
-        const ACCESS_CODES = ['tisztajelszo', 'iskola' , 'kecskemet'];
+        const ACCESS_CODES = ['tisztajelszo', 'iskola' , 'kecskemet', 'mugen'];
         const ACCESS_GRANTED_STORAGE_KEY = 'tb_accessGranted';
+        const MUGEN_CHEAT_STORAGE_KEY = 'tb_mugenCheatEnabled';
+        const ACCESS_CODE_CHANGE_PENDING_KEY = 'tb_accessCodeChangePending';
+        let mugenCheatEnabled = false;
+        let changingAccessCode = false;
 
         function initAccessCode() {
             try {
-                if (localStorage.getItem(ACCESS_GRANTED_STORAGE_KEY) === 'true') {
+                const accessGranted = localStorage.getItem(ACCESS_GRANTED_STORAGE_KEY) === 'true';
+                changingAccessCode = accessGranted && localStorage.getItem(ACCESS_CODE_CHANGE_PENDING_KEY) === 'true';
+                mugenCheatEnabled = accessGranted && localStorage.getItem(MUGEN_CHEAT_STORAGE_KEY) === 'true';
+                document.getElementById('cancelAccessCodeChange').style.display = changingAccessCode ? 'block' : 'none';
+                if (accessGranted && !changingAccessCode) {
                     document.getElementById('accessCodeOverlay').style.display = 'none';
                     document.getElementById('menuOverlay').style.display = 'flex';
+                } else if (changingAccessCode) {
+                    document.getElementById('accessCodeOverlay').style.display = 'flex';
+                    document.getElementById('menuOverlay').style.display = 'none';
                 }
             } catch (error) {
                 console.warn('Unable to load the saved access preference.', error);
             }
+        }
+
+        function beginAccessCodeChange() {
+            changingAccessCode = true;
+            try {
+                localStorage.setItem(ACCESS_CODE_CHANGE_PENDING_KEY, 'true');
+            } catch (error) {
+                console.warn('Unable to save the pending access code change.', error);
+            }
+            document.getElementById('accessCodeInput').value = '';
+            document.getElementById('accessCodeError').textContent = '';
+            document.getElementById('cancelAccessCodeChange').style.display = 'block';
+            document.getElementById('menuOverlay').style.display = 'none';
+            document.getElementById('accessCodeOverlay').style.display = 'flex';
+            document.getElementById('accessCodeInput').focus();
+        }
+
+        function discardAccessCodeChange() {
+            if (!changingAccessCode) return;
+            changingAccessCode = false;
+            try {
+                localStorage.removeItem(ACCESS_CODE_CHANGE_PENDING_KEY);
+            } catch (error) {
+                console.warn('Unable to cancel the pending access code change.', error);
+            }
+            document.getElementById('accessCodeError').textContent = '';
+            document.getElementById('cancelAccessCodeChange').style.display = 'none';
+            document.getElementById('accessCodeOverlay').style.display = 'none';
+            document.getElementById('menuOverlay').style.display = 'flex';
         }
 
         function unlockMainMenu(event) {
@@ -2610,11 +2656,16 @@
                 return false;
             }
 
+            mugenCheatEnabled = codeInput.value.trim() === 'mugen';
             try {
                 localStorage.setItem(ACCESS_GRANTED_STORAGE_KEY, 'true');
+                localStorage.setItem(MUGEN_CHEAT_STORAGE_KEY, String(mugenCheatEnabled));
+                localStorage.removeItem(ACCESS_CODE_CHANGE_PENDING_KEY);
             } catch (error) {
                 console.warn('Unable to save the access preference.', error);
             }
+            changingAccessCode = false;
+            document.getElementById('cancelAccessCodeChange').style.display = 'none';
             document.getElementById('accessCodeOverlay').style.display = 'none';
             document.getElementById('menuOverlay').style.display = 'flex';
             return false;
@@ -3043,9 +3094,39 @@
             copyInput.blur();
         }
 
+        function normalizeRoomCode(value) {
+            return value.trim().replace(/[\s-]/g, '').toUpperCase();
+        }
+
+        function normalizeRoomCodeInput(input) {
+            input.value = normalizeRoomCode(input.value);
+        }
+
+        function connectOnEnter(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                connectToPeer();
+            }
+        }
+
         function connectToPeer() {
-            const targetId = document.getElementById('joinPeerId').value.trim().toUpperCase();
-            if (!targetId) return alert("Please enter a room code!");
+            const input = document.getElementById('joinPeerId');
+            const targetId = normalizeRoomCode(input.value);
+            input.value = targetId;
+            if (!targetId) {
+                const statusEl = document.getElementById('onlineStatus');
+                statusEl.innerText = "Please enter a room code.";
+                statusEl.style.color = "#e84118";
+                input.focus();
+                return;
+            }
+            if (!/^[A-Z]{3}\d{3}$/.test(targetId)) {
+                const statusEl = document.getElementById('onlineStatus');
+                statusEl.innerText = "Invalid room code. Enter the 3 letters and 3 digits shown by the host.";
+                statusEl.style.color = "#e84118";
+                input.focus();
+                return;
+            }
             if (!peer || !peer.open) {
                 pendingPeerId = targetId;
                 const statusEl = document.getElementById('onlineStatus');
@@ -3213,7 +3294,9 @@
             } else if (data.type === 'coop_restart_request') {
                 if (isHost && onlineGameMode === 'coop' && isGameOver) restartCoopDeployment();
             } else if (data.type === 'player_died') {
-                gameOver(true);
+                if (isOnlineMode && onlineGameMode === 'duel' && !isGameOver) gameOver(true);
+            } else if (data.type === 'player_killed') {
+                if (isOnlineMode && onlineGameMode === 'duel' && !isGameOver) gameOver(false);
             } else if (data.type === 'medkit_pickup') {
                 medkits = medkits.filter(m => m.id !== data.id);
             } else if (data.type === 'open_next_round_menu') {
@@ -4546,6 +4629,27 @@
             }
 
             killsNeededThisLevel = enemies.length;
+            checkLevelComplete();
+        }
+
+        function eliminateAllEnemies() {
+            if (!mugenCheatEnabled || !isGameRunning || isGameOver) return;
+            if (isOnlineMode && onlineGameMode === 'duel') {
+                if (!peerConnections.some(conn => conn.open)) return;
+                broadcastData({ type: 'player_killed' });
+                gameOver(true);
+                return;
+            }
+            if (enemies.length === 0 || (isOnlineMode && (onlineGameMode !== 'coop' || !isHost))) return;
+
+            const defeatedEnemies = enemies.splice(0);
+            score += defeatedEnemies.length;
+            levelKills += defeatedEnemies.length;
+            for (const enemy of defeatedEnemies) {
+                createParticles(enemy.x, enemy.y, "#e84118", 16, { speed: 5, fadeColor: "#2f3640" });
+            }
+            SFX.enemyDeath();
+            updateUI();
             checkLevelComplete();
         }
 
