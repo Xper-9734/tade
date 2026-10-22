@@ -1404,13 +1404,18 @@
 <body>
 
     <div id="accessCodeOverlay" class="modal-overlay">
-        <h1>TACTICAL DEPLOYMENT</h1>
+        <h1 data-i18n="menuTitle">TACTICAL DEPLOYMENT</h1>
         <form id="accessCodeForm" onsubmit="return unlockMainMenu(event)">
-            <label for="accessCodeInput">Írd be a belépési kódot</label>
+            <label for="accessCodeLanguageSelect" data-i18n="selectLangLabel">Select Language:</label>
+            <select id="accessCodeLanguageSelect" onchange="changeLanguage(this.value)" style="background:#2f3640; border:1px solid #718093; color:#fff; padding:6px 12px; border-radius:5px; font-weight:bold; cursor:pointer;">
+                <option value="hu">Magyar</option>
+                <option value="en">English</option>
+            </select>
+            <label for="accessCodeInput" data-i18n="accessCodePrompt">Enter the access code</label>
             <input id="accessCodeInput" class="input-code" type="password" autocomplete="off" autofocus required>
             <p id="accessCodeError" role="alert" aria-live="polite"></p>
-            <button class="btn" type="submit">Tovább a főmenüre</button>
-            <button id="cancelAccessCodeChange" class="btn btn-secondary" type="button" onclick="discardAccessCodeChange()" style="display:none;">Vissza a menübe</button>
+            <button class="btn" type="submit" data-i18n="accessCodeContinue">Continue to main menu</button>
+            <button id="cancelAccessCodeChange" class="btn btn-secondary" type="button" onclick="discardAccessCodeChange()" style="display:none;" data-i18n="accessCodeCancel">Back to menu</button>
         </form>
     </div>
 
@@ -2010,6 +2015,10 @@
         const translations = {
             hu: {
                 menuTitle: "TAKTIKAI BEVETÉS",
+                accessCodePrompt: "Írd be a belépési kódot",
+                accessCodeContinue: "Tovább a főmenüre",
+                accessCodeCancel: "Vissza a menübe",
+                accessCodeInvalid: "Hibás kód. Próbáld újra!",
                 btnPlay: "PLAY / EGYÉNI JÁTÉK",
                 btnOnline: "ONLINE 1v1 MULTIPLAYER",
                 btnSettings: "SETTINGS / BEÁLLÍTÁSOK",
@@ -2122,6 +2131,10 @@
             },
             en: {
                 menuTitle: "TACTICAL DEPLOYMENT",
+                accessCodePrompt: "Enter the access code",
+                accessCodeContinue: "Continue to main menu",
+                accessCodeCancel: "Back to menu",
+                accessCodeInvalid: "Incorrect code. Please try again.",
                 btnPlay: "PLAY / SINGLEPLAYER",
                 btnOnline: "ONLINE - MULTIPLAYER",
                 btnSettings: "SETTINGS",
@@ -2236,6 +2249,9 @@
 
         function changeLanguage(lang) {
             currentLang = lang;
+            document.querySelectorAll('#languageSelect, #accessCodeLanguageSelect').forEach(sel => {
+                sel.value = lang;
+            });
             document.querySelectorAll('[data-i18n]').forEach(el => {
                 const key = el.getAttribute('data-i18n');
                 if (translations[currentLang][key]) {
@@ -2525,6 +2541,7 @@
             }
             document.getElementById('accessCodeInput').value = '';
             document.getElementById('accessCodeError').textContent = '';
+            document.getElementById('accessCodeError').removeAttribute('data-i18n');
             document.getElementById('cancelAccessCodeChange').style.display = 'block';
             document.getElementById('menuOverlay').style.display = 'none';
             document.getElementById('accessCodeOverlay').style.display = 'flex';
@@ -2540,6 +2557,7 @@
                 console.warn('Unable to cancel the pending access code change.', error);
             }
             document.getElementById('accessCodeError').textContent = '';
+            document.getElementById('accessCodeError').removeAttribute('data-i18n');
             document.getElementById('cancelAccessCodeChange').style.display = 'none';
             document.getElementById('accessCodeOverlay').style.display = 'none';
             document.getElementById('menuOverlay').style.display = 'flex';
@@ -2550,7 +2568,8 @@
             const codeInput = document.getElementById('accessCodeInput');
             const errorMessage = document.getElementById('accessCodeError');
             if (!ACCESS_CODES.includes(codeInput.value.trim())) {
-                errorMessage.textContent = 'Hibás kód. Próbáld újra!';
+                errorMessage.setAttribute('data-i18n', 'accessCodeInvalid');
+                errorMessage.textContent = translations[currentLang].accessCodeInvalid;
                 codeInput.focus();
                 codeInput.select();
                 return false;
