@@ -2603,8 +2603,19 @@
                         ],
                         username: "peerjs",
                         credential: "peerjsp"
+                    },
+                    {
+                        urls: [
+                            "turn:openrelay.metered.ca:80",
+                            "turn:openrelay.metered.ca:443",
+                            "turn:openrelay.metered.ca:443?transport=tcp",
+                            "turns:openrelay.metered.ca:443?transport=tcp"
+                        ],
+                        username: "openrelayproject",
+                        credential: "openrelayproject"
                     }
                 ],
+                iceCandidatePoolSize: 4,
                 sdpSemantics: "unified-plan"
             }
         };
@@ -2837,7 +2848,11 @@
                 isHost = true; setupConnection(conn);
             });
 
-            peer.on('disconnected', () => { if (peer) peer.reconnect(); });
+            peer.on('disconnected', () => {
+                setTimeout(() => {
+                    try { if (peer && !peer.destroyed && peer.disconnected) peer.reconnect(); } catch (e) {}
+                }, 1500);
+            });
 
             peer.on('error', (err) => {
                 if (err.type === 'unavailable-id') {
@@ -2847,6 +2862,16 @@
                     return;
                 }
                 statusEl.innerText = getPeerErrorMessage(err); statusEl.style.color = "#e84118";
+                const retryable = ['network', 'socket-error', 'socket-closed', 'server-error'].includes(err.type);
+                if (retryable && peerConnections.length === 0) {
+                    setTimeout(() => {
+                        if (peerConnections.length === 0 && (!peer || !peer.open)) {
+                            try { if (peer) peer.destroy(); } catch (e) {}
+                            peer = null;
+                            initPeerJS();
+                        }
+                    }, 4000);
+                }
             });
         }
 
@@ -2925,12 +2950,17 @@
                 input.focus();
                 return;
             }
+            if (peer && peer.destroyed) peer = null;
             if (!peer || !peer.open) {
                 pendingPeerId = targetId;
                 const statusEl = document.getElementById('onlineStatus');
                 statusEl.innerText = "Waiting for network connection...";
                 statusEl.style.color = "#f1c40f";
-                if (!peer) initPeerJS();
+                if (!peer) {
+                    initPeerJS();
+                } else if (peer.disconnected) {
+                    try { peer.reconnect(); } catch (e) { try { peer.destroy(); } catch (e2) {} peer = null; initPeerJS(); }
+                }
                 return;
             }
             pendingPeerId = null;
