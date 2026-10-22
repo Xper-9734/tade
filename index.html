@@ -676,6 +676,16 @@
             bottom: 24px;
             color: rgba(191, 99, 61, 0.72);
         }
+        #menuOverlay #menuVersion {
+            position: absolute;
+            left: 32px;
+            bottom: 24px;
+            z-index: 1;
+            color: var(--menu-muted);
+            font: 700 10px/1 'Arial Narrow', 'Segoe UI', sans-serif;
+            letter-spacing: 2px;
+            pointer-events: none;
+        }
         #menuOverlay #menuTitle {
             position: relative;
             margin: 12px 0 36px;
@@ -760,6 +770,7 @@
             #menuOverlay { padding: 38px 12px 42px; }
             #menuOverlay::before { top: 14px; left: 12px; font-size: 8px; letter-spacing: 2px; }
             #menuOverlay::after { right: 12px; bottom: 14px; font-size: 7px; letter-spacing: 1px; }
+            #menuOverlay #menuVersion { left: 12px; bottom: 14px; font-size: 8px; letter-spacing: 1px; }
             #menuOverlay #menuTitle { margin: 10px 0 24px; font-size: 34px; letter-spacing: 1px; }
             #menuOverlay #mainMenuButtons { width: min(520px, 94vw); padding: 18px 18px 20px; border-radius: 16px; }
             #menuOverlay #mainMenuButtons::before { padding-bottom: 11px; margin-bottom: 12px; font-size: 10px; letter-spacing: 3px; }
@@ -1370,6 +1381,7 @@
             <button class="btn btn-secondary" style="width: 280px; display: block; margin: 10px auto;" onclick="showMenuSection('settings')" data-i18n="btnSettings">SETTINGS</button>
             <button class="btn btn-secondary" style="width: 280px; display: block; margin: 10px auto;" onclick="toggleFullscreen()" data-i18n="btnFullscreen">FULL SCREEN</button>
         </div>
+        <div id="menuVersion">VERZIÓ 1.0.0</div>
 
         <!-- ONLINE MODE SECTION -->
         <div id="onlineSection" style="display:none; text-align:center;">
@@ -2422,6 +2434,7 @@
 
         function showMenuSection(sec) {
             document.getElementById('mainMenuButtons').style.display = sec === 'main' ? 'block' : 'none';
+            document.getElementById('menuVersion').style.display = sec === 'main' ? 'block' : 'none';
             document.getElementById('playSection').style.display = sec === 'play' ? 'block' : 'none';
             document.getElementById('settingsSection').style.display = sec === 'settings' ? 'block' : 'none';
             document.getElementById('onlineSection').style.display = sec === 'online' ? 'block' : 'none';
@@ -2573,7 +2586,28 @@
         }
 
         const LOBBY_ID = "TAKTIKAI-BEVETES-LOBBY-V1";
-        const PEERJS_OPTIONS = { host: "0.peerjs.com", port: 443, path: "/", secure: true };
+        const PEERJS_OPTIONS = {
+            host: "0.peerjs.com",
+            port: 443,
+            path: "/",
+            secure: true,
+            config: {
+                iceServers: [
+                    { urls: "stun:stun.l.google.com:19302" },
+                    {
+                        urls: [
+                            "turn:eu-0.turn.peerjs.com:3478",
+                            "turn:eu-0.turn.peerjs.com:3478?transport=tcp",
+                            "turn:us-0.turn.peerjs.com:3478",
+                            "turn:us-0.turn.peerjs.com:3478?transport=tcp"
+                        ],
+                        username: "peerjs",
+                        credential: "peerjsp"
+                    }
+                ],
+                sdpSemantics: "unified-plan"
+            }
+        };
         let lobbyPeer = null;
         let lobbyConn = null;
         let isLobbyHost = false;
@@ -2910,7 +2944,7 @@
             const connectionTimeout = setTimeout(() => {
                 if (conn.open) return;
                 peerConnections = peerConnections.filter(c => c !== conn);
-                statusEl.innerText = "The peer connection did not open within 30 seconds. The mobile network may be blocking WebRTC.";
+                statusEl.innerText = "Could not connect within 30 seconds. Check that both devices use HTTPS, have internet access, and allow WebRTC connections.";
                 statusEl.style.color = "#e84118";
                 try { conn.close(); } catch (e) {}
             }, 30000);
