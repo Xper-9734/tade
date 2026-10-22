@@ -1311,49 +1311,6 @@
         #menuOverlay #mainMenuButtons .btn::before {
             border-color: var(--menu-heading);
         }
-        #accessCodeOverlay {
-            z-index: 200;
-            justify-content: center;
-            background: radial-gradient(circle, rgba(20,24,33,0.96) 0%, rgba(10,12,16,0.99) 100%);
-        }
-        #accessCodeOverlay h1 {
-            margin-bottom: 12px;
-            font-size: clamp(28px, 6vw, 44px);
-        }
-        #accessCodeForm {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 14px;
-            width: min(360px, 92vw);
-            padding: 28px 24px;
-            border: 1px solid rgba(76, 209, 55, 0.4);
-            border-radius: 14px;
-            background: rgba(20, 26, 20, 0.9);
-            box-shadow: 0 0 32px rgba(76, 209, 55, 0.12);
-            box-sizing: border-box;
-        }
-        #accessCodeForm label {
-            color: #d2d9ae;
-            font-size: 16px;
-            font-weight: bold;
-            text-align: center;
-        }
-        #accessCodeInput {
-            width: 100%;
-            border-color: #4cd137;
-        }
-        #accessCodeError {
-            min-height: 20px;
-            margin: 0;
-            color: #ff6b6b;
-            font-size: 14px;
-            text-align: center;
-        }
-        #accessCodeForm .btn {
-            width: min(240px, 100%);
-            margin: 0;
-        }
         @media (max-width: 600px) {
             #settingsSection .theme-settings-row {
                 min-height: 42px;
@@ -1403,24 +1360,8 @@
 </head>
 <body>
 
-    <div id="accessCodeOverlay" class="modal-overlay">
-        <h1 data-i18n="menuTitle">TACTICAL DEPLOYMENT</h1>
-        <form id="accessCodeForm" onsubmit="return unlockMainMenu(event)">
-            <label for="accessCodeLanguageSelect" data-i18n="selectLangLabel">Select Language:</label>
-            <select id="accessCodeLanguageSelect" onchange="changeLanguage(this.value)" style="background:#2f3640; border:1px solid #718093; color:#fff; padding:6px 12px; border-radius:5px; font-weight:bold; cursor:pointer;">
-                <option value="hu">Magyar</option>
-                <option value="en">English</option>
-            </select>
-            <label for="accessCodeInput" data-i18n="accessCodePrompt">Enter the access code</label>
-            <input id="accessCodeInput" class="input-code" type="password" autocomplete="off" autofocus required>
-            <p id="accessCodeError" role="alert" aria-live="polite"></p>
-            <button class="btn" type="submit" data-i18n="accessCodeContinue">Continue to main menu</button>
-            <button id="cancelAccessCodeChange" class="btn btn-secondary" type="button" onclick="discardAccessCodeChange()" style="display:none;" data-i18n="accessCodeCancel">Back to menu</button>
-        </form>
-    </div>
-
     <!-- MAIN MENU -->
-    <div id="menuOverlay" class="modal-overlay" style="display:none;">
+    <div id="menuOverlay" class="modal-overlay">
         <h1 id="menuTitle" data-i18n="menuTitle">TACTICAL DEPLOYMENT</h1>
         
         <div id="mainMenuButtons">
@@ -1428,7 +1369,6 @@
             <button class="btn" style="width: 280px; display: block; margin: 10px auto; background-color: #00d2d3;" onclick="showMenuSection('online')" data-i18n="btnOnline">ONLINE - MULTIPLAYER</button>
             <button class="btn btn-secondary" style="width: 280px; display: block; margin: 10px auto;" onclick="showMenuSection('settings')" data-i18n="btnSettings">SETTINGS</button>
             <button class="btn btn-secondary" style="width: 280px; display: block; margin: 10px auto;" onclick="toggleFullscreen()" data-i18n="btnFullscreen">FULL SCREEN</button>
-            <button class="btn btn-secondary" style="width: 280px; display: block; margin: 10px auto;" onclick="beginAccessCodeChange()" data-i18n="btnChangeAccessCode">BELÉPÉSI KÓD VÁLTÁSA</button>
         </div>
 
         <!-- ONLINE MODE SECTION -->
@@ -2015,15 +1955,10 @@
         const translations = {
             hu: {
                 menuTitle: "TAKTIKAI BEVETÉS",
-                accessCodePrompt: "Írd be a belépési kódot",
-                accessCodeContinue: "Tovább a főmenüre",
-                accessCodeCancel: "Vissza a menübe",
-                accessCodeInvalid: "Hibás kód. Próbáld újra!",
                 btnPlay: "PLAY / EGYÉNI JÁTÉK",
                 btnOnline: "ONLINE 1v1 MULTIPLAYER",
                 btnSettings: "SETTINGS / BEÁLLÍTÁSOK",
                 btnFullscreen: "TELJES KÉPERNYŐ",
-                btnChangeAccessCode: "BELÉPÉSI KÓD VÁLTÁSA",
                 onlineTitle: "ONLINE JÁTÉKMÓD",
                 onlineModeTitle: "JÁTÉKMÓD",
                 onlineDuelMode: "1v1 PÁRBAJ",
@@ -2131,15 +2066,10 @@
             },
             en: {
                 menuTitle: "TACTICAL DEPLOYMENT",
-                accessCodePrompt: "Enter the access code",
-                accessCodeContinue: "Continue to main menu",
-                accessCodeCancel: "Back to menu",
-                accessCodeInvalid: "Incorrect code. Please try again.",
                 btnPlay: "PLAY / SINGLEPLAYER",
                 btnOnline: "ONLINE - MULTIPLAYER",
                 btnSettings: "SETTINGS",
                 btnFullscreen: "FULL SCREEN",
-                btnChangeAccessCode: "CHANGE ACCESS CODE",
                 onlineTitle: "ONLINE GAME MODE",
                 onlineModeTitle: "GAME MODE",
                 onlineDuelMode: "1v1 DUEL",
@@ -2249,7 +2179,7 @@
 
         function changeLanguage(lang) {
             currentLang = lang;
-            document.querySelectorAll('#languageSelect, #accessCodeLanguageSelect').forEach(sel => {
+            document.querySelectorAll('#languageSelect').forEach(sel => {
                 sel.value = lang;
             });
             document.querySelectorAll('[data-i18n]').forEach(el => {
@@ -2340,8 +2270,6 @@
 
             const activeTag = document.activeElement ? document.activeElement.tagName : '';
             if (activeTag === 'INPUT' || activeTag === 'TEXTAREA') return;
-
-            if (e.code === 'KeyM' && !e.repeat) eliminateAllEnemies();
 
             if (e.code === 'Escape') { quitGameToMenu(); return; }
             if (e.code === keyBindings.weapon1) { switchWeapon('1'); }
@@ -2505,89 +2433,6 @@
             } else {
                 stopLobbyHeartbeat();
             }
-        }
-
-        const ACCESS_CODES = ['tisztajelszo', 'iskola' , 'kecskemet', 'mugen'];
-        const ACCESS_GRANTED_STORAGE_KEY = 'tb_accessGranted';
-        const MUGEN_CHEAT_STORAGE_KEY = 'tb_mugenCheatEnabled';
-        const ACCESS_CODE_CHANGE_PENDING_KEY = 'tb_accessCodeChangePending';
-        let mugenCheatEnabled = false;
-        let changingAccessCode = false;
-
-        function initAccessCode() {
-            try {
-                const accessGranted = localStorage.getItem(ACCESS_GRANTED_STORAGE_KEY) === 'true';
-                changingAccessCode = accessGranted && localStorage.getItem(ACCESS_CODE_CHANGE_PENDING_KEY) === 'true';
-                mugenCheatEnabled = accessGranted && localStorage.getItem(MUGEN_CHEAT_STORAGE_KEY) === 'true';
-                document.getElementById('cancelAccessCodeChange').style.display = changingAccessCode ? 'block' : 'none';
-                if (accessGranted && !changingAccessCode) {
-                    document.getElementById('accessCodeOverlay').style.display = 'none';
-                    document.getElementById('menuOverlay').style.display = 'flex';
-                } else if (changingAccessCode) {
-                    document.getElementById('accessCodeOverlay').style.display = 'flex';
-                    document.getElementById('menuOverlay').style.display = 'none';
-                }
-            } catch (error) {
-                console.warn('Unable to load the saved access preference.', error);
-            }
-        }
-
-        function beginAccessCodeChange() {
-            changingAccessCode = true;
-            try {
-                localStorage.setItem(ACCESS_CODE_CHANGE_PENDING_KEY, 'true');
-            } catch (error) {
-                console.warn('Unable to save the pending access code change.', error);
-            }
-            document.getElementById('accessCodeInput').value = '';
-            document.getElementById('accessCodeError').textContent = '';
-            document.getElementById('accessCodeError').removeAttribute('data-i18n');
-            document.getElementById('cancelAccessCodeChange').style.display = 'block';
-            document.getElementById('menuOverlay').style.display = 'none';
-            document.getElementById('accessCodeOverlay').style.display = 'flex';
-            document.getElementById('accessCodeInput').focus();
-        }
-
-        function discardAccessCodeChange() {
-            if (!changingAccessCode) return;
-            changingAccessCode = false;
-            try {
-                localStorage.removeItem(ACCESS_CODE_CHANGE_PENDING_KEY);
-            } catch (error) {
-                console.warn('Unable to cancel the pending access code change.', error);
-            }
-            document.getElementById('accessCodeError').textContent = '';
-            document.getElementById('accessCodeError').removeAttribute('data-i18n');
-            document.getElementById('cancelAccessCodeChange').style.display = 'none';
-            document.getElementById('accessCodeOverlay').style.display = 'none';
-            document.getElementById('menuOverlay').style.display = 'flex';
-        }
-
-        function unlockMainMenu(event) {
-            event.preventDefault();
-            const codeInput = document.getElementById('accessCodeInput');
-            const errorMessage = document.getElementById('accessCodeError');
-            if (!ACCESS_CODES.includes(codeInput.value.trim())) {
-                errorMessage.setAttribute('data-i18n', 'accessCodeInvalid');
-                errorMessage.textContent = translations[currentLang].accessCodeInvalid;
-                codeInput.focus();
-                codeInput.select();
-                return false;
-            }
-
-            mugenCheatEnabled = codeInput.value.trim() === 'mugen';
-            try {
-                localStorage.setItem(ACCESS_GRANTED_STORAGE_KEY, 'true');
-                localStorage.setItem(MUGEN_CHEAT_STORAGE_KEY, String(mugenCheatEnabled));
-                localStorage.removeItem(ACCESS_CODE_CHANGE_PENDING_KEY);
-            } catch (error) {
-                console.warn('Unable to save the access preference.', error);
-            }
-            changingAccessCode = false;
-            document.getElementById('cancelAccessCodeChange').style.display = 'none';
-            document.getElementById('accessCodeOverlay').style.display = 'none';
-            document.getElementById('menuOverlay').style.display = 'flex';
-            return false;
         }
 
         function applyMenuTheme(theme) {
@@ -4551,27 +4396,6 @@
             checkLevelComplete();
         }
 
-        function eliminateAllEnemies() {
-            if (!mugenCheatEnabled || !isGameRunning || isGameOver) return;
-            if (isOnlineMode && onlineGameMode === 'duel') {
-                if (!peerConnections.some(conn => conn.open)) return;
-                broadcastData({ type: 'player_killed' });
-                gameOver(true);
-                return;
-            }
-            if (enemies.length === 0 || (isOnlineMode && (onlineGameMode !== 'coop' || !isHost))) return;
-
-            const defeatedEnemies = enemies.splice(0);
-            score += defeatedEnemies.length;
-            levelKills += defeatedEnemies.length;
-            for (const enemy of defeatedEnemies) {
-                createParticles(enemy.x, enemy.y, "#e84118", 16, { speed: 5, fadeColor: "#2f3640" });
-            }
-            SFX.enemyDeath();
-            updateUI();
-            checkLevelComplete();
-        }
-
         function syncCoopEnemies() {
             if (!isOnlineMode || onlineGameMode !== 'coop' || !isHost || peerConnections.length === 0) return;
             const now = Date.now();
@@ -5379,7 +5203,6 @@
         function initLanguage() {
             const sel = document.getElementById('languageSelect');
             if (sel) sel.value = currentLang;
-            initAccessCode();
             initMenuTheme();
             changeLanguage(currentLang);
         }
